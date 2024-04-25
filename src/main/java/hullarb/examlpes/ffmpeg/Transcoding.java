@@ -69,67 +69,60 @@ public class Transcoding {
     }
 
     static AVFormatContext openOutput(String fileName) {
-        outputFormatContext = avformat_alloc_context();
-        if (outputFormatContext == null) {
-            throw new RuntimeException("Could not allocate output format context");
-        }
-
-        outputFormatContext.oformat(av_guess_format("mp4", fileName, null));
-        if (outputFormatContext.oformat() == null) {
-            throw new RuntimeException("Could not find output format for MP4");
-        }
-
+        outputFormatContext = new AVFormatContext(null);
+        check(avformat_alloc_output_context2(outputFormatContext, null, null, fileName));
         for (int i = 0; i < inputFormatContext.nb_streams(); i++) {
+            AVCodec c = new AVCodec(null);
+            AVStream outStream = avformat_new_stream(outputFormatContext, c);
             AVStream inStream = inputFormatContext.streams(i);
             AVCodecContext decoderContext = streamContexts[i].decoderContext;
-
-            AVStream outStream = avformat_new_stream(outputFormatContext, null);
-            if (outStream == null) {
-                throw new RuntimeException("Could not allocate output stream");
-            }
-
-            if (decoderContext.codec_type() == AVMEDIA_TYPE_VIDEO) {
-                AVCodec encoder = avcodec_find_encoder(AV_CODEC_ID_H264);
-                if (encoder == null) {
-                    throw new RuntimeException("Could not find H.264 encoder");
-                }
-
+            if (decoderContext.codec_type() == AVMEDIA_TYPE_VIDEO ||
+                    decoderContext.codec_type() == AVMEDIA_TYPE_AUDIO) {
+                AVCodec encoder = avcodec_find_encoder(decoderContext.codec_id());
                 AVCodecContext encoderContext = avcodec_alloc_context3(encoder);
-                if (encoderContext == null) {
-                    throw new RuntimeException("Could not allocate encoder context");
+                if (decoderContext.codec_type() == AVMEDIA_TYPE_VIDEO) {
+                    encoderContext.height(decoderContext.height());
+                    encoderContext.width(decoderContext.width());
+                    encoderContext.sample_aspect_ratio(decoderContext.sample_aspect_ratio());
+                    if (encoder.pix_fmts() != null && encoder.pix_fmts().asBuffer() != null) {
+                        encoderContext.pix_fmt(encoder.pix_fmts().get(0));
+                    } else {
+                        encoderContext.pix_fmt(decoderContext.pix_fmt());
+                    }
+                    encoderContext.time_base(av_inv_q(decoderContext.framerate()));
+                } else {
+                    encoderContext.sample_rate(decoderContext.sample_rate());
+                    encoderContext.channel_layout(decoderContext.channel_layout());
+                    encoderContext.channels(av_get_channel_layout_nb_channels(encoderContext.channel_layout()));
+                    encoderContext.sample_fmt(encoder.sample_fmts().get(0));
+                    encoderContext.time_base(av_make_q(1, encoderContext.sample_rate()));
                 }
 
-                // Set video encoder options here
-                encoderContext.width(decoderContext.width());
-                encoderContext.height(decoderContext.height());
-                encoderContext.sample_aspect_ratio(decoderContext.sample_aspect_ratio());
-                encoderContext.pix_fmt(encoder.pix_fmts().get(0));
-                encoderContext.time_base(av_inv_q(decoderContext.framerate()));
-
-                check(avcodec_open2(encoderContext, encoder, (PointerPointer) null));
+                check(avcodec_open2(encoderContext, encoder, (AVDictionary) null));
                 check(avcodec_parameters_from_context(outStream.codecpar(), encoderContext));
+                if ((outputFormatContext.oformat().flags() & AVFMT_GLOBALHEADER) == AVFMT_GLOBALHEADER) {
+                    encoderContext.flags(encoderContext.flags() | CODEC_FLAG_GLOBAL_HEADER);
+                }
                 outStream.time_base(encoderContext.time_base());
                 streamContexts[i].encoderContext = encoderContext;
-            } else if (decoderContext.codec_type() == AVMEDIA_TYPE_AUDIO) {
-                check(avcodec_parameters_copy(outStream.codecpar(), inStream.codecpar()));
-                outStream.time_base(inStream.time_base());
-                streamContexts[i].encoderContext = null; // No encoder needed for audio
             } else {
-                check(avcodec_parameters_copy(outStream.codecpar(), inStream.codecpar()));
-                outStream.time_base(inStream.time_base());
+                if (decoderContext.codec_type() == AVMEDIA_TYPE_UNKNOWN) {
+                    throw new RuntimeException();
+                } else {
+                    check(avcodec_parameters_copy(outStream.codecpar(), inStream.codecpar()));
+                    outStream.time_base(inStream.time_base());
+                }
             }
         }
+        av_dump_format(outputFormatContext, 0, fileName, 1);
 
-        AVIOContext ioContext = avio_alloc_context((BytePointer) null, 0, 0, null, null, null, null);
-        if (ioContext == null) {
-            throw new RuntimeException("Could not allocate I/O context");
+        if ((outputFormatContext.flags() & AVFMT_NOFILE) != AVFMT_NOFILE) {
+            AVIOContext c = new AVIOContext();
+            check(avio_open(c, fileName, AVIO_FLAG_WRITE));
+            outputFormatContext.pb(c);
         }
 
-        check(avio_open2(ioContext, fileName, AVIO_FLAG_WRITE, null, null));
-        outputFormatContext.pb(ioContext);
-
-        check(avformat_write_header(outputFormatContext, (PointerPointer) null));
-
+        check(avformat_write_header(outputFormatContext, (AVDictionary) null));
         return outputFormatContext;
     }
 
