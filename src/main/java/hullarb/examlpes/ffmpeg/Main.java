@@ -497,7 +497,7 @@ public class Main {
         av_register_all();
 
         openInput("C:\\Users\\amirkhb\\IdeaProjects\\javacpp-ffmpeg-example_Amir\\src\\main\\java\\hullarb\\examlpes\\ffmpeg\\a.flv");
-        AVFormatContext outputContext = openOutput("C:\\Users\\amirkhb\\IdeaProjects\\javacpp-ffmpeg-example_Amir\\src\\main\\java\\hullarb\\examlpes\\ffmpeg\\c.mp4");
+        AVFormatContext outputContext = openOutput("C:\\Users\\amirkhb\\IdeaProjects\\javacpp-ffmpeg-example_Amir\\src\\main\\java\\hullarb\\examlpes\\ffmpeg\\b.mp4");
 
 
         try {
