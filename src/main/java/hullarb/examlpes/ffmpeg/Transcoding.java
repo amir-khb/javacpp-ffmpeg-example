@@ -265,16 +265,16 @@ public class Transcoding {
 
     public static void main(String[] args) throws IOException {
 
-        if (args.length < 2) {
-            System.out.println("Usage:Transcoding <input> <output>");
-            System.exit(-1);
-        }
+//        if (args.length < 2) {
+//            System.out.println("Usage:Transcoding <input> <output>");
+//            System.exit(-1);
+//        }
         // Register all formats and codecs
         av_register_all();
         avfilter_register_all();
 
-        openInput(args[0]);
-        openOutput(args[1]);
+        openInput("args[0]");
+        openOutput("args[1]");
         initFilters();
         try {
             int[] gotFrame = new int[1];
