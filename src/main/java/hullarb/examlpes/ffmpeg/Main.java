@@ -70,7 +70,12 @@ public class Main {
             AVCodecContext decoderContext = streamContexts[i].decoderContext;
             if (decoderContext.codec_type() == AVMEDIA_TYPE_VIDEO ||
                     decoderContext.codec_type() == AVMEDIA_TYPE_AUDIO) {
-                AVCodec encoder = avcodec_find_encoder(decoderContext.codec_id());
+                AVCodec encoder;
+                if (decoderContext.codec_type() == AVMEDIA_TYPE_VIDEO) {
+                    encoder = avcodec_find_encoder(AV_CODEC_ID_MPEG4); // Use mp4 video codec
+                } else {
+                    encoder = avcodec_find_encoder(decoderContext.codec_id());
+                }
                 AVCodecContext encoderContext = avcodec_alloc_context3(encoder);
                 if (decoderContext.codec_type() == AVMEDIA_TYPE_VIDEO) {
                     encoderContext.height(decoderContext.height());
@@ -128,8 +133,8 @@ public class Main {
         av_register_all();
         avfilter_register_all();
 
-        openInput("args[0]");
-        openOutput("args[1]");
+        openInput("C:\\Users\\amirkhb\\IdeaProjects\\javacpp-ffmpeg-example_Amir\\src\\main\\java\\hullarb\\examlpes\\ffmpeg\\a.flv");
+        openOutput("C:\\Users\\amirkhb\\IdeaProjects\\javacpp-ffmpeg-example_Amir\\src\\main\\java\\hullarb\\examlpes\\ffmpeg\\b.mp4");
 //        initFilters();
 //        try {
 //            int[] gotFrame = new int[1];
