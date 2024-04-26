@@ -273,8 +273,8 @@ public class Transcoding {
         av_register_all();
         avfilter_register_all();
 
-        openInput("args[0]");
-        openOutput("args[1]");
+        openInput("C:\\Users\\amirkhb\\IdeaProjects\\javacpp-ffmpeg-example_Amir\\src\\main\\java\\hullarb\\examlpes\\ffmpeg\\a.flv");
+        openOutput("C:\\Users\\amirkhb\\IdeaProjects\\javacpp-ffmpeg-example_Amir\\src\\main\\java\\hullarb\\examlpes\\ffmpeg\\b.mp4");
         initFilters();
         try {
             int[] gotFrame = new int[1];
